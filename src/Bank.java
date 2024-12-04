@@ -4,6 +4,8 @@ import java.util.Scanner;
 import java.util.UUID;
 
 public class Bank {
+    String nickname;
+    String password;
     BankInterface bankInterface = new BankInterface() {
         private final ArrayList<String[]> users = new ArrayList<>();
         private final Scanner sc = new Scanner(System.in);
@@ -17,17 +19,33 @@ public class Bank {
         @Override
         public void signup() {
             String[] user = createUser();
+
+            for (String[] existingUser : users) {
+                if (Objects.equals(existingUser[2], user[2])) {
+                    System.out.println("Никнейм уже существует! Попробуйте другой.");
+                    return;
+                }
+            }
+
             users.add(user);
             System.out.println("Пользователь был успешно зарегистрирован!");
+            String[] lastUser = users.getLast();
+            System.out.println("Имя: " + lastUser[0] +
+                    ", Фамилия: " + lastUser[1] +
+                    ", Никнейм: " + lastUser[2] +
+                    ", Пароль: " + lastUser[3] +
+                    ", Роль: " + lastUser[4] +
+                    ", Айди: " + lastUser[5]
+            );
         }
 
         @Override
         public boolean signin() {
             System.out.println("Введите ваш никнейм: ");
-            String nickname = sc.nextLine().trim();
+            nickname = sc.nextLine().trim();
 
             System.out.println("Введите ваш пароль: ");
-            String password = sc.nextLine().trim();
+            password = sc.nextLine().trim();
 
             String role = getRole(nickname, password);
             if (role != null) {
@@ -36,6 +54,29 @@ public class Bank {
             } else {
                 System.out.println("Неверный никнейм или пароль.");
                 return false;
+            }
+        }
+
+        @Override
+        public void removeUser() {
+            if (!users.isEmpty()) {
+                System.out.println("Для удаления пользователя введите его ID: ");
+                String userId = sc.nextLine();
+
+                for (String[] user : users) {
+                    if (Objects.equals(user[5], userId) && Objects.equals(user[4], "Админ")) {
+                        System.out.println("Ты не можешь удалить админа!");
+                        return;
+                    }
+                }
+
+                if (removeUserById(userId)) {
+                    System.out.println("Пользователь был удален!");
+                } else {
+                    System.out.println("Пользователь не найден!");
+                }
+            } else {
+                System.out.println("Нет пользователей для удаления!");
             }
         }
 
@@ -57,11 +98,11 @@ public class Bank {
             }
         }
 
-        // Вспомогательный метод для определения роли
-        private String getRole(String nickname, String password) {
+        @Override
+        public String getRole(String userNickname, String userPassword) {
             for (String[] user : users) {
-                if (Objects.equals(user[2], nickname) && Objects.equals(user[3], password)) {
-                    return user[5];
+                if (Objects.equals(user[2], userNickname) && Objects.equals(user[3], userPassword)) {
+                    return user[4];
                 }
             }
             return null;
@@ -78,13 +119,19 @@ public class Bank {
 
             System.out.println("Введите ваш никнейм (оставьте пустым для значения по умолчанию):");
             String userNickname = sc.nextLine().trim();
-            if (userNickname.isEmpty()) userNickname = "Юзер " + users.size();
+            if (userNickname.isEmpty()) userNickname = "Пользователь " + users.size();
+            nickname = userNickname;
 
             System.out.println("Введите ваш пароль (оставьте пустым для значения по умолчанию):");
             String userPassword = sc.nextLine().trim();
             if (userPassword.isEmpty()) userPassword = String.valueOf(UUID.randomUUID());
+            password = userPassword;
 
             return new String[]{userName, userSurname, userNickname, userPassword, "Пользователь", String.valueOf(UUID.randomUUID())};
+        }
+
+        private boolean removeUserById(String id) {
+            return users.removeIf(user -> Objects.equals(user[5], id));
         }
     };
 }
